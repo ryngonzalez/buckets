@@ -1,4 +1,2 @@
-Buckets
-=======
-
-** TODO: Add description **
+# Buckets
+A distributed key-value store built on Elixir and OTP.
