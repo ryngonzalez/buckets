@@ -8,8 +8,8 @@ defmodule Buckets.Registry do
   @doc """
   Starts the registry.
   """
-  def start_link(event_manager, opts \\ []) do
-    GenServer.start_link(__MODULE__, event_manager, opts)
+  def start_link(event_manager, buckets, opts \\ []) do
+    GenServer.start_link(__MODULE__, {event_manager, buckets}, opts)
   end
 
   @doc """
@@ -40,10 +40,10 @@ defmodule Buckets.Registry do
   # Server callbacks
   ################
 
-  def init(events) do
+  def init({events, buckets}) do
     refs  = HashDict.new
     names = HashDict.new
-    {:ok, %{names: names, refs: refs, events: events}}
+    {:ok, %{names: names, refs: refs, events: events, buckets: buckets}}
   end
 
   def handle_call({:lookup, name}, _from, %{names: names} = state) do
@@ -58,7 +58,7 @@ defmodule Buckets.Registry do
     if HashDict.has_key?(state.names, name) do
       {:noreply, %{state | names: state.names, refs: state.refs}}
     else
-      {:ok, pid} = Buckets.Bucket.start_link()
+      {:ok, pid} = Buckets.Bucket.Supervisor.start_bucket(state.buckets)
       ref = Process.monitor(pid)
       refs = HashDict.put(state.refs, ref, name)
       names = HashDict.put(state.names, name, pid)
